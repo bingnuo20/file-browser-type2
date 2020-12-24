@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <style type="text/css">
+        #loginDiv {
+            background-color: #fff;
+            border-radius: 10px;
+            width: 300px;
+            height: 350px;
+            margin: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body style="background-color: #ACD6FF">
+<div style="width: 350px;height: 250px;border: 1px dotted paleturquoise" id="loginDiv">
+    <div style="text-align: center;font-weight: bold;font-size: 16px;">文件管理</div>
+    <form style="margin-top: 45px;" action="doLogin" method="post">
+        <div >
+            <span class="input-group-addon">用户名</span>
+            <input type="text"  placeholder="请输入用户名" name="userCode" style="width: 270px;">
+        </div>
+        <br>
+        <div >
+            <span class="input-group-addon">密&emsp;码</span>
+            <input type="password" placeholder="请输入密码" name="userPwd" style="width: 270px;">
+        </div>
+        <br>
+
+        <button type="submit" style="width: 80%;border: none;height: 30px;background-color: lightblue;margin-left: 10%;">登录</button>
+    </form>
+</div>
+
+<script type="text/javascript">
+
+</script>
+</body>
+</html>

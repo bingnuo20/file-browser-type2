@@ -1,0 +1,16 @@
+server:
+  port: 5280
+spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+sys:
+  login:
+    #用户名
+    username: root
+    #密码
+    password: 1qaz@WSX
+#固定值
+certCode: c645afee-ca26-44e1-8264-9229ad217de2
+#附件根目录
+dirPath: C:/logs

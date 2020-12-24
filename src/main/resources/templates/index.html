@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>文件管理首页</title>
+    <script src="/jquery.min.js"></script>
+    <script src="/commons.js"></script>
+    <script src="/msg.js"></script>
+    <script src="/jquery.form.min.js"></script>
+    <link rel="stylesheet" href="/bs/css/bootstrap.min.css">
+    <script src="/bs/js/bootstrap.min.js"></script>
+    <style>
+        body{
+            text-align:left
+        }
+        .div{
+            margin:0 auto;
+            width:96%;
+        }
+        .title{
+            text-align: center;
+            font-size: 28px;
+            padding-bottom: 30px;
+        }
+        button{
+            margin: 1px;
+            min-width: 75px;
+        }
+        table,table tr th, table tr td { border:1px solid #000000; }
+        table { width: 200px; min-height: 25px; line-height: 25px; text-align: center; border-collapse: collapse; padding:2px;}
+    </style>
+</head>
+<body>
+<div class="div">
+    <div class="title">
+        文件列表
+    </div>
+    <div>
+        根目录<span th:text="${baseDirPath}" id="root"></span>
+    </div>
+    <div>
+        当前目录<span th:text="${baseDirPath}" id="curPath"></span>
+    </div>
+    <hr>
+    <div>
+        <span>
+            <form id="fileForm" action="uploadFile" enctype="multipart/form-data" method="post" style="display:inline-block">
+                <input type="file" id="file" name="file"  style="width: 90%;">
+                <input type="hidden" id="path" name="path">
+                <input type="hidden" id="key" name="key" value="c645afee-ca26-44e1-8264-9229ad217de2">
+            </form>
+        </span>
+        <span >
+            <button type="button" class="btn btn-primary btn-sm" id="uploadBtn" onmouseover="File.setPath()">上传附件</button>
+            <button type="button" class="btn btn-primary btn-sm" id="createDirBtn" data-toggle="modal" data-target="#createDirModal">新建目录</button>
+        </span>
+
+    </div>
+    <hr>
+    <div style="padding-top: 15px;margin-top: 10px;">
+        <table style="width: 100%">
+            <thead>
+                <tr style="background-color: lightblue;">
+                    <td style="width: 55%;">文件</td>
+                    <td style="width: 30%;">创建时间</td>
+                    <td style="width: 15%;">操作</td>
+                </tr>
+            </thead>
+            <tbody id="main">
+
+            </tbody>
+        </table>
+    </div>
+
+
+    <iframe id="id_iframe" name="id_iframe" style="display:none;"></iframe>
+
+    <!-- 创建文件夹模态框-->
+    <div class="modal fade" id="createDirModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                        &times;
+                    </button>
+                    <h4 class="modal-title">
+                        目录名
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <input id="dirName" class="form-control" placeholder="请输入目录名">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="File.createDir()">
+                        创建
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重命名文件夹模态框-->
+    <div class="modal fade" id="renameDirModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                        &times;
+                    </button>
+                    <h4 class="modal-title">
+                        目录名
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <input id="oldDirName" type="hidden">
+                    <input id="newDirName" type="text" class="form-control" placeholder="请输入新的目录名">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="File.renameDir()">
+                        重命名
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+
+        $("#uploadBtn").bind('click',function () {
+            if($("#file").val()==""){
+                msg.info("请选择文件",null);
+                return;
+            }
+            $("#fileForm").ajaxSubmit({
+                url: "ajaxUploadFile",
+                type: "post",
+                enctype: 'multipart/form-data',
+                dataType:'json',
+                success: function (data) {
+                    msg.info(data.msg,null);
+                    $("#file").val('');
+                    File.loadList();
+                },
+                error: function (data) {
+                    msg.info(data.msg,null);
+                }
+            })
+        });
+
+        /**
+         * 文件操作对象
+         */
+        var File={
+            /**
+             * 创建目录
+             */
+            createDir:function(){
+                var param={
+                    path:encodeURI($("#curPath").html()),
+                    newDir:$("#dirName").val()
+                }
+                CommonUtil.submitAjaxData("createDir",param,function (data) {
+                    msg.info(data.msg,null);
+                    if(data.flag){
+                        $("#dirName").val('');
+                        File.loadList();
+                        $('#createDirModal').modal('hide');
+                    }
+                })
+            },
+            /**
+             * 加载文件列表
+             */
+            loadList:function() {
+                var param={
+                    path:encodeURI($("#curPath").html())
+                }
+                File.renderTable(param);
+            },
+            /**
+             * 渲染列表
+             * @param param 参数对象
+             */
+            renderTable:function(param) {
+                var data=CommonUtil.getAjaxData("listFiles",param);
+                var html="";
+                var list=data.list;
+                var dts=data.dts;
+                if(list!=null){
+                    if($("#root").html()!=$("#curPath").html()){
+                        html+="<tr><td style='text-align: left;color: red' colspan='3' onclick='File.goBack()'>返回</td></tr>";
+                    }
+                    for (var i=0;i<list.length;i++){
+                        if(list[i].indexOf("[进入]")>0){
+                            html+="<tr><td style='text-align: left;' colspan='2'><a  href='#' onclick='File.enterDir(this)'>"+list[i].substring(0,list[i].indexOf("[进入]"))
+                                + "</a></td><td><button class='btn btn-danger btn-xs' onclick='File.delDir(this)'>删除</button><button class='btn btn-primary btn-xs' onclick='File.renameEvt(this)'>重命名</button></td></tr>";
+                        }else{
+                            html+="<tr><td style='text-align: left;'>"+list[i]+"</td><td>"+dts[i]
+                                + "</td><td><button class='btn btn-danger btn-xs' onclick='File.del(this)'>删除</button><button class='btn btn-primary btn-xs' onclick='File.down(this)'>下载</button></td></tr>";
+                        }
+                    }
+                    $("#main").html(html);
+                }
+            },
+            /**
+             * 下载文件
+             * @param e 对象本身
+             */
+            down:function(e) {
+                var tr=e.parentNode.parentNode;
+                var file=encodeURI(tr.cells[0].innerHTML);
+                var path=encodeURI($("#curPath").html());
+                location.href='download?fileName='+file+"&dirPath="+path;
+            },
+            /**
+             * 删除文件
+             * @param e 对象本身
+             */
+            del:function(e) {
+                var tr=e.parentNode.parentNode;
+                var file=tr.cells[0].innerHTML;
+                var path=$("#curPath").html();
+                var filePath=encodeURI(path+"/"+file);
+                var r=msg.confirm("确定删除文件【"+file+"】");
+                if(r){
+                    CommonUtil.submitAjaxData("deleteFile",{fileName:filePath,key:'c645afee-ca26-44e1-8264-9229ad217de2'},function (data) {
+                        msg.info(data.msg,null);
+                        if(data.flag){
+                            File.loadList();
+                        }
+                    });
+                }
+            },
+            /**
+             * 删除目录
+             * @param e 对象本身
+             */
+            delDir:function (e) {
+                var tr=e.parentNode.parentNode;
+                var file=tr.cells[0].getElementsByTagName("a")[0].innerHTML;
+                var path=$("#curPath").html();
+                var filePath=encodeURI(path+"/"+file);
+                var r=msg.confirm("确定删除文件【"+file+"】");
+                if(r){
+                    CommonUtil.submitAjaxData("deleteFile",{fileName:filePath,key:'c645afee-ca26-44e1-8264-9229ad217de2'},function(data){
+                        msg.info(data.msg,null);
+                        if(data.flag){
+                            File.loadList();
+                        }
+                    });
+                }
+            },
+            /**
+             * 返回到父级目录
+             */
+            goBack:function(){
+                $("#curPath").html($("#curPath").html().substring(0,$("#curPath").html().lastIndexOf("/")));
+                var param={
+                    path:encodeURI($("#curPath").html())
+                }
+                File.renderTable(param);
+            },
+            /**
+             * 设置当前路径
+             */
+            setPath:function(){
+                $("#path").val($("#curPath").html());
+            },
+            /**
+             * 进入文件夹
+             * @param enterDir 文件夹名称
+             */
+            enterDir:function (enterDir){
+                $("#curPath").html($("#curPath").html()+"/"+enterDir.innerHTML);
+                var param={
+                    path:encodeURI($("#curPath").html())
+                }
+                File.renderTable(param);
+            },
+            /**
+             * 打卡重命名窗口
+             * @param e 对象本身
+             */
+            renameEvt:function (e) {
+                var tr=e.parentNode.parentNode;
+                var file=tr.cells[0].getElementsByTagName("a")[0].innerHTML;
+                $("#oldDirName").val(file);
+                $("#newDirName").val(file);
+                $('#renameDirModal').modal('show')
+            },
+            /**
+             * 目录重命名
+             */
+            renameDir:function(){
+                var param={
+                    path:encodeURI($("#curPath").html()),
+                    newDir:$("#newDirName").val(),
+                    oldDir:$("#oldDirName").val()
+                }
+                CommonUtil.submitAjaxData("renameDir",param,function (data) {
+                    msg.info(data.msg,null);
+                    if(data.flag){
+                        $("#oldDirName").val('');
+                        $("#newDirName").val('');
+                        $('#renameDirModal').modal('hide');
+                        File.loadList();
+                    }
+                })
+            }
+        }
+        File.loadList();
+    </script>
+</div>
+</body>
+</html>
